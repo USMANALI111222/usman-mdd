@@ -1,3 +1,4 @@
+const crypto   = require("crypto");
 const express  = require("express");
 const cors     = require("cors");
 const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion } = require("@whiskeysockets/baileys");
@@ -99,3 +100,4 @@ app.get("/status/:id", (req, res) => {
 server.listen(PORT, () => {
   console.log(`✅ USMAN-MD Pair Server running on port ${PORT}`);
 });
+  
