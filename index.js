@@ -71,7 +71,7 @@ webApp.post("/pair", async (req, res) => {
         creds: state.creds,
         keys: makeCacheableSignalKeyStore(state.keys, silentLogger),
       },
-      browser: ["Ubuntu", "Chrome", "20.0.04"],
+      browser: ["USMAN-MD", "Safari", "3.0"],
       keepAliveIntervalMs: 25000,
       connectTimeoutMs: 60000,
       defaultQueryTimeoutMs: 30000,
@@ -79,7 +79,7 @@ webApp.post("/pair", async (req, res) => {
     });
 
     sock.ev.on("creds.update", saveCreds);
-    await new Promise(r => setTimeout(r, 3000));
+    await new Promise(r => setTimeout(r, 5000));
 
     const code = await sock.requestPairingCode(num);
     const fmt = code?.match(/.{1,4}/g)?.join("-") || code;
@@ -159,7 +159,7 @@ async function startBot() {
       creds: state.creds,
       keys: makeCacheableSignalKeyStore(state.keys, silentLogger),
     },
-    browser: ["Ubuntu", "Chrome", "20.0.04"],
+    browser: ["USMAN-MD", "Safari", "3.0"],
     keepAliveIntervalMs: 25000,
     connectTimeoutMs: 60000,
     defaultQueryTimeoutMs: 30000,
@@ -250,3 +250,4 @@ setInterval(() => {
 
 // Start bot if already paired
 startBot().catch(e => logger.error("Fatal: " + e.message));
+          
