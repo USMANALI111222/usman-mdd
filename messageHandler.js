@@ -12,22 +12,18 @@ const allMsgs = new Map();         // msgId → stored msg (for anti-delete)
 global.viewOnceStore = global.viewOnceStore || new Map();
 
 function loadCommands() {
-  const folders = fs.readdirSync(commandsPath);
-  for (const folder of folders) {
-    const folderPath = path.join(commandsPath, folder);
-    if (!fs.statSync(folderPath).isDirectory()) continue;
-    const files = fs.readdirSync(folderPath).filter(f => f.endsWith(".js"));
-    for (const file of files) {
-      try {
-        const cmd = require(path.join(folderPath, file));
-        (Array.isArray(cmd) ? cmd : [cmd]).forEach(c => {
-          if (!c?.name) return;
+  const skip = ["messageHandler.js","groupHandler.js","index.js","config.js","logger.js","helpers.js","index.html"];
+  const files = fs.readdirSync(__dirname).filter(f => f.endsWith(".js") && !skip.includes(f));
+  for (const file of files) {
+    try {
+      const cmd = require(path.join(__dirname, file));
+      (Array.isArray(cmd) ? cmd : [cmd]).forEach(c => {
+        if (!c?.name) return;
         commands.set(c.name, c);
         (c.alias || []).forEach(a => commands.set(a, c));
-        });
-      } catch (e) {
-        logger.error(`Load error ${file}: ${e.message}`);
-      }
+      });
+    } catch (e) {
+      logger.error(`Load error ${file}: ${e.message}`);
     }
   }
   logger.info(`✅ Loaded ${commands.size} commands`);
@@ -209,3 +205,4 @@ async function handleMessageDelete(sock, update) {
 }
 
 module.exports = { handleMessage, handleMessageDelete, commands };
+                        
