@@ -3,7 +3,6 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 
-// Fix crypto
 if (typeof globalThis.crypto === "undefined") {
   globalThis.crypto = require("crypto").webcrypto;
 }
@@ -13,37 +12,38 @@ const {
   useMultiFileAuthState,
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
-  delay,
+  proto,
 } = require("@whiskeysockets/baileys");
 
 const pino = require("pino");
-const express_app = express();
+
+const app = express();
 const PORT = process.env.PORT || 3000;
 
-express_app.use(cors({ origin: "*" }));
-express_app.use(express.json());
+app.use(cors({ origin: "*" }));
+app.use(express.json());
 
 const sessions = new Map();
 
-express_app.get("/", (req, res) => {
-  res.json({ status: "online", sessions: sessions.size });
+app.get("/", (req, res) => {
+  res.json({ status: "online" });
 });
 
-express_app.post("/pair", async (req, res) => {
+app.post("/pair", async (req, res) => {
   const num = (req.body.phone || "").replace(/\D/g, "");
-
-  if (!num || num.length < 7 || num.length > 15) {
+  if (!num || num.length < 7) {
     return res.json({ success: false, error: "Invalid number" });
   }
 
-  // Kill existing
+  // Kill old session same number
   if (sessions.has(num)) {
-    try { sessions.get(num).end(); } catch {}
+    try { sessions.get(num).sock.end(); } catch {}
     sessions.delete(num);
   }
 
-  const authDir = path.join("/tmp", "s_" + num);
-  try { fs.mkdirSync(authDir, { recursive: true }); } catch {}
+  const authDir = path.join("/tmp", "auth_" + num);
+  try { fs.rmSync(authDir, { recursive: true, force: true }); } catch {}
+  fs.mkdirSync(authDir, { recursive: true });
 
   try {
     const { state, saveCreds } = await useMultiFileAuthState(authDir);
@@ -58,60 +58,58 @@ express_app.post("/pair", async (req, res) => {
         creds: state.creds,
         keys: makeCacheableSignalKeyStore(state.keys, logger),
       },
-      browser: ["WhatsApp", "Chrome", "121.0.0"],
+      // Exactly same as USMAN-MD bot
+      browser: ["Ubuntu", "Chrome", "20.0.04"],
+      keepAliveIntervalMs: 25000,
       connectTimeoutMs: 60000,
-      defaultQueryTimeoutMs: 0,
-      keepAliveIntervalMs: 15000,
-      retryRequestDelayMs: 2000,
-      maxMsgRetryCount: 2,
-      syncFullHistory: false,
-      markOnlineOnConnect: false,
-      generateHighQualityLinkPreview: false,
+      defaultQueryTimeoutMs: 30000,
+      getMessage: async () => proto.Message.fromObject({}),
     });
 
     sock.ev.on("creds.update", saveCreds);
 
-    // Wait properly for WS open
-    await new Promise((resolve) => {
-      sock.ev.on("connection.update", ({ connection }) => {
-        if (connection === "open" || connection === "connecting") resolve();
-      });
-      setTimeout(resolve, 5000);
-    });
+    // Wait 3 seconds for WS to connect
+    await new Promise(r => setTimeout(r, 3000));
 
-    await delay(2000);
-
+    // Request pairing code
     const code = await sock.requestPairingCode(num);
     const fmt = code?.match(/.{1,4}/g)?.join("-") || code;
 
     const sessionId = num + "_" + Date.now();
-    sessions.set(sessionId, sock);
+    sessions.set(num, { sock, sessionId, status: "pending" });
+    sessions.set(sessionId, { sock, status: "pending" });
 
     sock.ev.on("connection.update", ({ connection }) => {
+      if (connection === "open") {
+        if (sessions.has(sessionId)) sessions.get(sessionId).status = "connected";
+        if (sessions.has(num)) sessions.get(num).status = "connected";
+      }
       if (connection === "close") {
-        sessions.delete(sessionId);
-        try { fs.rmSync(authDir, { recursive: true, force: true }); } catch {}
+        if (sessions.has(sessionId)) sessions.get(sessionId).status = "closed";
+        sessions.delete(num);
       }
     });
 
+    // Cleanup after 5 min
     setTimeout(() => {
       try { sock.end(); } catch {}
       try { fs.rmSync(authDir, { recursive: true, force: true }); } catch {}
       sessions.delete(sessionId);
+      sessions.delete(num);
     }, 5 * 60 * 1000);
 
     return res.json({ success: true, code: fmt, sessionId });
 
   } catch (e) {
     try { fs.rmSync(authDir, { recursive: true, force: true }); } catch {}
-    console.error("Pair error:", e.message);
+    console.error("ERROR:", e.message);
     return res.json({ success: false, error: e.message });
   }
 });
 
-express_app.get("/status/:id", (req, res) => {
-  res.json({ status: sessions.has(req.params.id) ? "pending" : "unknown" });
+app.get("/status/:id", (req, res) => {
+  const s = sessions.get(req.params.id);
+  res.json({ status: s?.status || "unknown" });
 });
 
-express_app.listen(PORT, () => console.log("Running on port " + PORT));
-                
+app.listen(PORT, () => console.log("USMAN-MD Pair running on port " + PORT));
