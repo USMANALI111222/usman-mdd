@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
-const http = require("http");
 
 // Fix crypto
 if (typeof globalThis.crypto === "undefined") {
@@ -14,44 +13,41 @@ const {
   useMultiFileAuthState,
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
+  delay,
 } = require("@whiskeysockets/baileys");
 
 const pino = require("pino");
-
-const app = express();
-const server = http.createServer(app);
+const express_app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ origin: "*", methods: ["GET", "POST"] }));
-app.use(express.json());
+express_app.use(cors({ origin: "*" }));
+express_app.use(express.json());
 
 const sessions = new Map();
 
-app.get("/", (req, res) => {
-  res.json({ status: "USMAN-MD Online", sessions: sessions.size });
+express_app.get("/", (req, res) => {
+  res.json({ status: "online", sessions: sessions.size });
 });
 
-app.post("/pair", async (req, res) => {
+express_app.post("/pair", async (req, res) => {
   const num = (req.body.phone || "").replace(/\D/g, "");
-  if (!num || num.length < 10 || num.length > 15) {
-    return res.json({ success: false, error: "Invalid phone number" });
+
+  if (!num || num.length < 7 || num.length > 15) {
+    return res.json({ success: false, error: "Invalid number" });
   }
 
-  // Kill old session
+  // Kill existing
   if (sessions.has(num)) {
-    try { sessions.get(num).sock.end(); } catch {}
+    try { sessions.get(num).end(); } catch {}
     sessions.delete(num);
   }
 
-  const sessionId = num + "_" + Date.now();
-  const authDir = path.join("/tmp", "wa_sessions", sessionId);
+  const authDir = path.join("/tmp", "s_" + num);
+  try { fs.mkdirSync(authDir, { recursive: true }); } catch {}
 
   try {
-    fs.mkdirSync(authDir, { recursive: true });
-
     const { state, saveCreds } = await useMultiFileAuthState(authDir);
     const { version } = await fetchLatestBaileysVersion();
-
     const logger = pino({ level: "silent" });
 
     const sock = makeWASocket({
@@ -62,65 +58,60 @@ app.post("/pair", async (req, res) => {
         creds: state.creds,
         keys: makeCacheableSignalKeyStore(state.keys, logger),
       },
-      // ✅ Yeh browser setting WhatsApp ko properly recognize karta hai
-      browser: ["USMAN-MD", "Safari", "3.0"],
+      browser: ["WhatsApp", "Chrome", "121.0.0"],
       connectTimeoutMs: 60000,
-      defaultQueryTimeoutMs: 30000,
-      keepAliveIntervalMs: 10000,
-      generateHighQualityLinkPreview: false,
+      defaultQueryTimeoutMs: 0,
+      keepAliveIntervalMs: 15000,
+      retryRequestDelayMs: 2000,
+      maxMsgRetryCount: 2,
       syncFullHistory: false,
       markOnlineOnConnect: false,
+      generateHighQualityLinkPreview: false,
     });
 
     sock.ev.on("creds.update", saveCreds);
 
-    // Wait for connection ready
-    await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error("Connection timeout")), 15000);
-      sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {
-        if (connection === "open" || connection === "connecting") {
-          clearTimeout(timeout);
-          resolve();
-        }
+    // Wait properly for WS open
+    await new Promise((resolve) => {
+      sock.ev.on("connection.update", ({ connection }) => {
+        if (connection === "open" || connection === "connecting") resolve();
       });
-      // Also resolve after 4 seconds regardless
-      setTimeout(() => { clearTimeout(timeout); resolve(); }, 4000);
+      setTimeout(resolve, 5000);
     });
 
-    // Request pairing code
-    const code = await sock.requestPairingCode(num);
-    const formatted = code?.match(/.{1,4}/g)?.join("-") || code;
+    await delay(2000);
 
-    sessions.set(sessionId, { sock, status: "pending" });
+    const code = await sock.requestPairingCode(num);
+    const fmt = code?.match(/.{1,4}/g)?.join("-") || code;
+
+    const sessionId = num + "_" + Date.now();
+    sessions.set(sessionId, sock);
 
     sock.ev.on("connection.update", ({ connection }) => {
-      const s = sessions.get(sessionId);
-      if (!s) return;
-      if (connection === "open") s.status = "connected";
-      if (connection === "close") s.status = "closed";
+      if (connection === "close") {
+        sessions.delete(sessionId);
+        try { fs.rmSync(authDir, { recursive: true, force: true }); } catch {}
+      }
     });
 
-    // Cleanup after 5 min
     setTimeout(() => {
-      try { sessions.get(sessionId)?.sock?.end(); } catch {}
+      try { sock.end(); } catch {}
       try { fs.rmSync(authDir, { recursive: true, force: true }); } catch {}
       sessions.delete(sessionId);
     }, 5 * 60 * 1000);
 
-    return res.json({ success: true, code: formatted, sessionId });
+    return res.json({ success: true, code: fmt, sessionId });
 
   } catch (e) {
     try { fs.rmSync(authDir, { recursive: true, force: true }); } catch {}
-    return res.json({ success: false, error: e.message || "Failed" });
+    console.error("Pair error:", e.message);
+    return res.json({ success: false, error: e.message });
   }
 });
 
-app.get("/status/:id", (req, res) => {
-  const s = sessions.get(req.params.id);
-  res.json({ status: s?.status || "unknown" });
+express_app.get("/status/:id", (req, res) => {
+  res.json({ status: sessions.has(req.params.id) ? "pending" : "unknown" });
 });
 
-server.listen(PORT, () => {
-  console.log("USMAN-MD running on port " + PORT);
-});
-      
+express_app.listen(PORT, () => console.log("Running on port " + PORT));
+                
