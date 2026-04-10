@@ -1,0 +1,19 @@
+{
+  "name": "usman-md-pair-backend",
+  "version": "1.0.0",
+  "description": "USMAN-MD WhatsApp Pairing Backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@whiskeysockets/baileys": "^6.7.9",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "pino": "^8.21.0"
+  }
+}
