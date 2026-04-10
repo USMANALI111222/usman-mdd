@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>USMAN-MD | Pair Code</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d0f1a; --card: #13162a; --card2: #181c30;
+    --border: #2a2f52; --accent: #7c5cfc; --accent2: #a78bfa;
+    --text: #e2e8f0; --muted: #8892b0; --success: #22c55e;
+  }
+  body {
+    background: var(--bg); font-family: 'Nunito', sans-serif;
+    color: var(--text); min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 80%, #7c5cfc18 0%, transparent 60%),
+      radial-gradient(ellipse 50% 30% at 80% 20%, #a78bfa12 0%, transparent 60%);
+  }
+  .container { position: relative; z-index: 1; width: 100%; max-width: 440px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 24px; padding: 36px 28px 28px;
+    box-shadow: 0 0 0 1px #7c5cfc18, 0 20px 60px #00000060, 0 0 80px #7c5cfc12;
+    animation: card-in 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(30px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .logo-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 28px; }
+  .logo-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: linear-gradient(135deg,#7c5cfc,#a78bfa,#6d28d9);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; margin-bottom: 14px;
+    box-shadow: 0 0 30px #7c5cfc60, 0 0 60px #7c5cfc30;
+    animation: pulse-glow 2.5s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%,100% { box-shadow: 0 0 30px #7c5cfc60, 0 0 60px #7c5cfc30; }
+    50%      { box-shadow: 0 0 50px #7c5cfcaa, 0 0 100px #7c5cfc50; }
+  }
+  .logo-title {
+    font-family: 'Rajdhani', sans-serif; font-size: 28px; font-weight: 700;
+    letter-spacing: 3px;
+    background: linear-gradient(90deg,#a78bfa,#7c5cfc,#c4b5fd);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .logo-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* Server status bar */
+  .server-bar {
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; font-size: 13px;
+  }
+  .server-left { display: flex; align-items: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #444; }
+  .dot.online  { background: var(--success); box-shadow: 0 0 6px #22c55e88; animation: blink 2s infinite; }
+  .dot.offline { background: #ef4444; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .server-name { font-weight: 700; color: var(--text); }
+  .server-ping { color: var(--muted); font-size: 11px; }
+
+  /* Info box */
+  .info-box {
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 16px;
+    display: flex; gap: 10px; margin-bottom: 20px; font-size: 12px;
+  }
+  .info-title { font-weight: 700; font-size: 13px; margin-bottom: 3px; }
+  .info-desc  { color: var(--muted); line-height: 1.6; }
+
+  /* Input */
+  .input-label { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 8px; letter-spacing: .5px; }
+  .input-wrap  { position: relative; margin-bottom: 6px; }
+  .input-icon  { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 17px; color: var(--muted); pointer-events: none; }
+  .phone-input {
+    width: 100%; background: #0d0f1a; border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 14px 14px 44px;
+    font-family: 'Nunito', sans-serif; font-size: 15px; color: var(--text); outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .phone-input::placeholder { color: #4a5070; }
+  .phone-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #7c5cfc22; }
+  .input-hint { font-size: 11px; color: var(--muted); margin-bottom: 18px; padding-left: 4px; }
+
+  /* Button */
+  .gen-btn {
+    width: 100%; background: linear-gradient(135deg,#7c5cfc,#a78bfa);
+    border: none; border-radius: 14px; padding: 16px;
+    font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 700;
+    letter-spacing: 2px; color: white; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all .25s; box-shadow: 0 4px 20px #7c5cfc40; margin-bottom: 14px;
+    position: relative; overflow: hidden;
+  }
+  .gen-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 32px #7c5cfc60; }
+  .gen-btn:disabled { opacity: .6; cursor: not-allowed; }
+  .spinner {
+    width: 18px; height: 18px; border: 2px solid #ffffff44;
+    border-top-color: white; border-radius: 50%;
+    animation: spin .7s linear infinite; display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Result */
+  .result-box {
+    background: #0d0f1a; border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px; text-align: center;
+    min-height: 64px; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 8px; transition: all .3s;
+  }
+  .result-box.has-code { border-color: var(--accent); background: #7c5cfc0d; box-shadow: 0 0 0 1px #7c5cfc33; }
+  .result-placeholder { color: #3a4060; font-size: 13px; }
+  .result-code {
+    font-family: 'Rajdhani', sans-serif; font-size: 32px; font-weight: 700;
+    letter-spacing: 6px;
+    background: linear-gradient(90deg,#a78bfa,#7c5cfc);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    display: none;
+  }
+  .result-code.show { display: block; }
+  .copy-hint {
+    font-size: 11px; color: var(--muted); cursor: pointer; letter-spacing: 1px;
+    -webkit-text-fill-color: var(--muted);
+  }
+  .copy-hint:hover { color: var(--accent2); -webkit-text-fill-color: var(--accent2); }
+  .connected-badge {
+    background: #22c55e22; color: var(--success); border: 1px solid #22c55e44;
+    border-radius: 20px; padding: 4px 14px; font-size: 12px; font-weight: 700;
+    display: none; -webkit-text-fill-color: var(--success);
+  }
+  .connected-badge.show { display: inline-block; }
+
+  /* Steps */
+  .steps-box {
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 16px; margin-top: 14px;
+    font-size: 12px; color: var(--muted); line-height: 1.9; display: none;
+  }
+  .steps-box.show { display: block; }
+  .steps-box b { color: var(--text); }
+
+  /* Error */
+  .error-msg { color: #f87171; font-size: 12px; text-align: center; margin-top: 8px; display: none; }
+
+  .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #3a4060; }
+  .footer span { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+
+    <div class="logo-wrap">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-title">USMAN-MD</div>
+      <div class="logo-sub">Generate Your Pairing Code</div>
+    </div>
+
+    <!-- Server Status Bar -->
+    <div class="server-bar">
+      <div class="server-left">
+        <div class="dot" id="serverDot"></div>
+        <div>
+          <div class="server-name" id="serverStatus">Checking server...</div>
+          <div class="server-ping" id="serverPing"></div>
+        </div>
+      </div>
+      <span style="font-size:18px">🖥️</span>
+    </div>
+
+    <!-- Info -->
+    <div class="info-box">
+      <div style="font-size:18px;margin-top:1px">ℹ️</div>
+      <div>
+        <div class="info-title">Quick Setup</div>
+        <div class="info-desc">Apna WhatsApp number dalo aur instantly pairing code generate karo. Koi deployment ki zaroorat nahi!</div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-label">WhatsApp Number</div>
+    <div class="input-wrap">
+      <div class="input-icon">📞</div>
+      <input class="phone-input" type="tel" id="phoneInput"
+        placeholder="923421234567" maxlength="15"
+        oninput="this.value=this.value.replace(/\D/g,''); clearError()">
+    </div>
+    <div class="input-hint">💡 Country code zaroor likho (e.g., 92 for Pakistan)</div>
+
+    <!-- Button -->
+    <button class="gen-btn" id="genBtn" onclick="generateCode()">
+      <span id="btnIcon">🔑</span>
+      <span id="btnText">Generate Pair Code</span>
+      <div class="spinner" id="spinner"></div>
+    </button>
+
+    <!-- Result -->
+    <div class="result-box" id="resultBox">
+      <div class="result-placeholder" id="placeholder">Your pairing code will appear here</div>
+      <div class="result-code" id="codeDisplay"></div>
+      <div class="connected-badge" id="connBadge">✅ Bot Connected!</div>
+      <div class="copy-hint" id="copyHint" onclick="copyCode()" style="display:none">📋 TAP TO COPY</div>
+    </div>
+
+    <div class="steps-box" id="stepsBox">
+      <b>Code enter karne ka tarika:</b><br>
+      1. WhatsApp kholo apne phone pe<br>
+      2. ⋮ Menu → <b>Linked Devices</b> tap karo<br>
+      3. <b>Link a Device</b> tap karo<br>
+      4. <b>"Link with phone number instead"</b> tap karo<br>
+      5. Upar wala code enter karo ✅
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <div class="footer">© 2026 USMAN-MD | Powered By <span>UsmanTechX</span></div>
+</div>
+
+<script>
+// ⚠️ IMPORTANT: Railway deploy ke baad apna URL yahan lagao
+// Example: "https://usman-md-pair-production.up.railway.app"
+const BACKEND_URL = "https://usman-mdd-production.up.railway.app";
+
+let sessionId = null;
+let pollTimer = null;
+let currentCode = "";
+
+// Server health check
+async function checkServer() {
+  const dot    = document.getElementById("serverDot");
+  const status = document.getElementById("serverStatus");
+  const ping   = document.getElementById("serverPing");
+  try {
+    const t0  = Date.now();
+    const res = await fetch(BACKEND_URL + "/", { signal: AbortSignal.timeout(5000) });
+    const ms  = Date.now() - t0;
+    if (res.ok) {
+      dot.className    = "dot online";
+      status.textContent = "Server Online";
+      ping.textContent   = `Ping: ${ms}ms`;
+    }
+  } catch {
+    dot.className    = "dot offline";
+    status.textContent = "Server Offline";
+    ping.textContent   = "Check Railway deployment";
+  }
+}
+
+async function generateCode() {
+  const phone = document.getElementById("phoneInput").value.trim();
+  if (!phone || phone.length < 10) {
+    return showError("⚠️ Valid number dalo country code ke saath");
+  }
+  if (BACKEND_URL === "YOUR_RAILWAY_URL_HERE") {
+    return showError("⚠️ BACKEND_URL set karo — Railway URL paste karo index.html mein");
+  }
+
+  setLoading(true);
+  clearError();
+  resetResult();
+
+  try {
+    const res  = await fetch(BACKEND_URL + "/pair", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      showError("❌ " + (data.error || "Failed. Dobara try karo."));
+      setLoading(false);
+      return;
+    }
+
+    currentCode = data.code;
+    sessionId   = data.sessionId;
+
+    document.getElementById("codeDisplay").textContent = data.code;
+    document.getElementById("codeDisplay").classList.add("show");
+    document.getElementById("copyHint").style.display = "block";
+    document.getElementById("placeholder").style.display = "none";
+    document.getElementById("resultBox").classList.add("has-code");
+    document.getElementById("stepsBox").classList.add("show");
+
+    setLoading(false);
+    document.getElementById("btnText").textContent = "✅ Code Generated";
+
+    startPolling();
+
+  } catch (e) {
+    showError("❌ Server se connect nahi ho saka. Railway check karo.");
+    setLoading(false);
+  }
+}
+
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    if (!sessionId) return;
+    try {
+      const r = await fetch(BACKEND_URL + "/status/" + sessionId).then(x => x.json());
+      if (r.status === "connected") {
+        document.getElementById("connBadge").classList.add("show");
+        document.getElementById("copyHint").style.display = "none";
+        document.getElementById("stepsBox").classList.remove("show");
+        clearInterval(pollTimer);
+      } else if (r.status === "closed") {
+        clearInterval(pollTimer);
+      }
+    } catch {}
+  }, 3000);
+}
+
+function copyCode() {
+  if (!currentCode) return;
+  navigator.clipboard.writeText(currentCode.replace(/-/g, "")).catch(() => {});
+  document.getElementById("copyHint").textContent = "✅ COPIED!";
+  setTimeout(() => document.getElementById("copyHint").textContent = "📋 TAP TO COPY", 2000);
+}
+
+function setLoading(on) {
+  const btn     = document.getElementById("genBtn");
+  const spinner = document.getElementById("spinner");
+  const btnText = document.getElementById("btnText");
+  const btnIcon = document.getElementById("btnIcon");
+  btn.disabled  = on;
+  spinner.style.display = on ? "block" : "none";
+  btnIcon.style.display = on ? "none"  : "inline";
+  if (on) btnText.textContent = "Generating...";
+}
+
+function resetResult() {
+  document.getElementById("codeDisplay").textContent = "";
+  document.getElementById("codeDisplay").classList.remove("show");
+  document.getElementById("copyHint").style.display = "none";
+  document.getElementById("placeholder").style.display = "block";
+  document.getElementById("resultBox").classList.remove("has-code");
+  document.getElementById("connBadge").classList.remove("show");
+  document.getElementById("stepsBox").classList.remove("show");
+  document.getElementById("btnText").textContent = "Generate Pair Code";
+  sessionId = null; currentCode = "";
+  if (pollTimer) clearInterval(pollTimer);
+}
+
+function showError(msg) {
+  const el = document.getElementById("errorMsg");
+  el.textContent   = msg;
+  el.style.display = "block";
+}
+function clearError() {
+  document.getElementById("errorMsg").style.display = "none";
+}
+
+// Page load pe server check
+checkServer();
+setInterval(checkServer, 30000);
+</script>
+</body>
+</html>
